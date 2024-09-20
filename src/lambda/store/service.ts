@@ -5,19 +5,31 @@ import {
 } from '@aws-sdk/client-eventbridge';
 import { LambdaClient, AddPermissionCommand } from '@aws-sdk/client-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { convertStorePropsIntervalToCron } from './../../utils/cron-utils';
+import { hashString } from './../../utils/hash-utils';
 
 const eventBridgeClient = new EventBridgeClient({});
 const lambdaClient = new LambdaClient({});
 const dynamodbClient = new DynamoDBClient({});
 
-const ruleName: string = '';
-const scheduleExpression: string = '';
-const lambdaArn: string = '';
+const lambdaArn: string = process.env.SEND_REMINDER_LAMBDA_FUNCTION_ARN;
 
 /**
  * Store reminder
  */
 export const store = async (props: StoreProps) => {
+  const { interval, sender, recipient, subject, message } = props;
+
+  if (!interval || !sender || !recipient || !message || !subject) {
+    throw new Error('Missing required property attributes!');
+  }
+
+  const ruleName: string = hashString(`mynudgely-${sender}:${recipient}:${subject}`);
+  const scheduleExpression: string = convertStorePropsIntervalToCron(
+    props.interval.type,
+    props.interval.value,
+  );
+
   try {
     // Create the EventBridge rule
     const putRuleCommand = new PutRuleCommand({
@@ -52,7 +64,9 @@ export const store = async (props: StoreProps) => {
     // Store reminder in database
     const {} = props;
 
-
+    return {
+      reminderId: 'some-id',
+    };
   } catch (err) {
     throw err;
   }
@@ -60,13 +74,18 @@ export const store = async (props: StoreProps) => {
 
 export interface StoreProps {
   interval: StorePropsInterval;
+  sender: string;
   recipient: string;
+  subject: string;
+  message: string;
+}
+
+export type ReminderRecord = {
+  reminderId: string;
+  ruleName: string;
 }
 
 export type StorePropsInterval = {
-  minute?: number;
-  hour?: number;
-  day?: number;
-  week?: number;
-  month?: number;
+  type: 'minutes' | 'hours' | 'days' | 'weeks';
+  value: number;
 };
