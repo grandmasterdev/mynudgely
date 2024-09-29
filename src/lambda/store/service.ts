@@ -1,91 +1,120 @@
 import {
-  EventBridgeClient,
-  PutRuleCommand,
-  PutTargetsCommand,
+    EventBridgeClient,
+    PutRuleCommand,
+    PutTargetsCommand,
 } from '@aws-sdk/client-eventbridge';
 import { LambdaClient, AddPermissionCommand } from '@aws-sdk/client-lambda';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { convertStorePropsIntervalToCron } from './../../utils/cron-utils';
 import { hashString } from './../../utils/hash-utils';
+import { client, PutCommand } from './../../clients/dynamodb-client';
+import { generateUniqueId } from '../../utils/dynamodb-utils';
 
 const eventBridgeClient = new EventBridgeClient({});
 const lambdaClient = new LambdaClient({});
-const dynamodbClient = new DynamoDBClient({});
+const ddbClient = client();
 
 const lambdaArn: string = process.env.SEND_REMINDER_LAMBDA_FUNCTION_ARN;
+
+const dynamodbTableName: string = process.env.REMINDER_TABLE_NAME;
 
 /**
  * Store reminder
  */
 export const store = async (props: StoreProps) => {
-  const { interval, sender, recipient, subject, message } = props;
+    const { interval, sender, recipient, subject, message } = props;
 
-  if (!interval || !sender || !recipient || !message || !subject) {
-    throw new Error('Missing required property attributes!');
-  }
+    if (!interval || !sender || !recipient || !message || !subject) {
+        throw new Error('Missing required property attributes!');
+    }
 
-  const ruleName: string = hashString(`mynudgely-${sender}:${recipient}:${subject}`);
-  const scheduleExpression: string = convertStorePropsIntervalToCron(
-    props.interval.type,
-    props.interval.value,
-  );
+    const ruleName: string = hashString(
+        `mynudgely-${sender}:${recipient}:${subject}`,
+    );
+    const scheduleExpression: string = convertStorePropsIntervalToCron(
+        props.interval.type,
+        props.interval.value,
+    );
 
-  try {
-    // Create the EventBridge rule
-    const putRuleCommand = new PutRuleCommand({
-      Name: ruleName,
-      ScheduleExpression: scheduleExpression,
-      State: 'ENABLED',
-    });
-    await eventBridgeClient.send(putRuleCommand);
+    try {
+        // Create the EventBridge rule
+        const putRuleCommand = new PutRuleCommand({
+            Name: ruleName,
+            ScheduleExpression: scheduleExpression,
+            State: 'ENABLED',
+        });
+        await eventBridgeClient.send(putRuleCommand);
 
-    // Add the Lambda function as a target
-    const putTargetsCommand = new PutTargetsCommand({
-      Rule: ruleName,
-      Targets: [
-        {
-          Id: '1',
-          Arn: lambdaArn,
-        },
-      ],
-    });
-    await eventBridgeClient.send(putTargetsCommand);
+        console.debug('Success - new event bridge rule has been created.');
 
-    // Add permission for EventBridge to invoke the Lambda function
-    const addPermissionCommand = new AddPermissionCommand({
-      FunctionName: lambdaArn,
-      StatementId: `${ruleName}-invoke`,
-      Action: 'lambda:InvokeFunction',
-      Principal: 'events.amazonaws.com',
-      SourceArn: `arn:aws:events:${process.env.AWS_REGION}:${process.env.AWS_ACCOUNT_ID}:rule/${ruleName}`,
-    });
-    await lambdaClient.send(addPermissionCommand);
+        // Add the Lambda function as a target
+        const putTargetsCommand = new PutTargetsCommand({
+            Rule: ruleName,
+            Targets: [
+                {
+                    Id: '1',
+                    Arn: lambdaArn,
+                },
+            ],
+        });
+        await eventBridgeClient.send(putTargetsCommand);
 
-    // Store reminder in database
-    const {} = props;
+        console.debug(
+            'Success - new event bridge rule target has been created.',
+        );
 
-    return {
-      reminderId: 'some-id',
-    };
-  } catch (err) {
-    throw err;
-  }
+        // Add permission for EventBridge to invoke the Lambda function
+        const addPermissionCommand = new AddPermissionCommand({
+            FunctionName: lambdaArn,
+            StatementId: `${ruleName}-invoke`,
+            Action: 'lambda:InvokeFunction',
+            Principal: 'events.amazonaws.com',
+            SourceArn: `arn:aws:events:${process.env.AWS_REGION}:${process.env.AWS_ACCOUNT_ID}:rule/${ruleName}`,
+        });
+        await lambdaClient.send(addPermissionCommand);
+
+        console.debug(
+            'Success - new permission has been granted to the event bridge to execute the lambda.',
+        );
+
+        // Store reminder in database
+        const reminderId: string = generateUniqueId();
+        const putCommand = new PutCommand({
+            TableName: dynamodbTableName,
+            Item: {
+                id: reminderId,
+                ...props,
+            },
+        });
+
+        const result = await ddbClient.send(putCommand);
+
+        console.debug(
+            'Success - new remindered has been added to the db',
+            result,
+        );
+
+        return {
+            reminderId: reminderId,
+        };
+    } catch (err) {
+        throw err;
+    }
 };
 
 export interface StoreProps {
-  interval: StorePropsInterval;
-  sender: string;
-  recipient: string;
-  subject: string;
-  message: string;
+    interval: StorePropsInterval;
+    sender: string;
+    recipient: string;
+    subject: string;
+    message: string;
 }
 
 export type ReminderRecord = {
-  reminderId: string;
-  ruleName: string;
-}
+    reminderId: string;
+    ruleName: string;
+};
 
 export type StorePropsInterval = {
-  type: 'minutes' | 'hours' | 'days' | 'weeks';
-  value: number;
+    type: 'minutes' | 'hours' | 'days' | 'weeks';
+    value: number;
 };

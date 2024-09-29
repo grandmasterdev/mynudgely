@@ -11,8 +11,12 @@ export class ReminderLambda extends Construct {
   public readonly killReminderFunction: lambda.Function;
   public readonly sendReminderFunction: lambda.Function;
 
+  private readonly reminderTableName: string; 
+
   constructor(scope: Construct, id: string, props?: ReminderLambdaProps) {
     super(scope, id);
+
+    this.reminderTableName = 'mynudgely-reminder';
 
     this.sendReminderFunction = new lambda.Function(
       this,
@@ -63,6 +67,7 @@ export class ReminderLambda extends Construct {
     const environment = {
       AWS_ACCOUNT_ID: Aws.ACCOUNT_ID,
       AWS_REGION: Aws.REGION,
+      REMINDER_TABLE_NAME: this.reminderTableName
     };
 
     if (props) {

@@ -8,11 +8,8 @@ export const convertStorePropsIntervalToCron = (
   if (type === 'hours' && value > 23) {
     throw new Error('Interval hour has to be lower than 24');
   }
-  if (type === 'days' && value > 30) {
+  if (type === 'days' && value > 31) {
     throw new Error('Interval day has to be lower than 31');
-  }
-  if (type === 'weeks' && value > 12) {
-    throw new Error('Interval month has to be lower than 13');
   }
 
   switch (type) {

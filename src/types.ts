@@ -17,6 +17,7 @@ declare global {
       AWS_REGION: string;
       AWS_ACCOUNT_ID: string;
       SEND_REMINDER_LAMBDA_FUNCTION_ARN: string;
+      REMINDER_TABLE_NAME: string;
     }
   }
 }

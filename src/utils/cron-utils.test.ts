@@ -18,6 +18,18 @@ describe("cron utils tests", () => {
         }).toThrow('Interval minute has to be lower than 60');
     });
 
+    it('should throw an exception if the value of hours exceed 24', () => {
+        expect(() => {
+            cut.convertStorePropsIntervalToCron('hours',60)
+        }).toThrow('Interval hour has to be lower than 24');
+    });
+
+    it('should throw an exception if the value of days exceed 30', () => {
+        expect(() => {
+            cut.convertStorePropsIntervalToCron('days',32)
+        }).toThrow('Interval day has to be lower than 31');
+    });
+
     it('should throw an exception if the type is not of the value allowed', () => {
         expect(() => {
             cut.convertStorePropsIntervalToCron('year' as any,1)

@@ -1,7 +1,7 @@
 import { APIGatewayEvent, Context } from 'aws-lambda';
 import { store, StoreProps } from './service';
 import { isStrJson } from '@nodifier/json';
-import { APIGatewayResponse, APIStatusCode } from '../types';
+import { APIGatewayResponse, APIStatusCode } from '../../types';
 
 /**
  * Store reminder lambda handler
