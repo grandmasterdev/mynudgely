@@ -7,7 +7,7 @@
     "mynudgely": "bin/mynudgely.js"
   },
   "scripts": {
-    "test": "jest --collectCoverage",
+    "test": "jest",
     "build-api": "esbuild ./src/lambda/index.ts --external:aws-sdk --platform=node --bundle --outfile=dist/lambda/index.js",
     "build-worker": "esbuild ./src/container/index.ts --external:aws-sdk --platform=node --bundle --outfile=dist/container/index.js",
     "build": "npm run build-api && npm run build-worker"

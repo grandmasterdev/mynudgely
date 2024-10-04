@@ -14,7 +14,6 @@ const lambdaClient = new LambdaClient({});
 const ddbClient = client();
 
 const lambdaArn: string = process.env.SEND_REMINDER_LAMBDA_FUNCTION_ARN;
-
 const dynamodbTableName: string = process.env.REMINDER_TABLE_NAME;
 
 /**
