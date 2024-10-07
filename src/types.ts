@@ -1,8 +1,36 @@
+/**
+ * Interfaces
+ */
+export interface ReminderProps {
+  interval: ReminderPropsInterval;
+  sender: string;
+  recipient: string;
+  subject: string;
+  message: string;
+  eventBridgeRuleName?: string;
+}
+
+/**
+ * Types
+ */
 export type APIGatewayResponse = {
   status: APIStatusCode;
   body?: string;
 };
 
+export type ReminderRecord = {
+  reminderId: string;
+  ruleName: string;
+};
+
+export type ReminderPropsInterval = {
+  type: 'minutes' | 'hours' | 'days' | 'weeks';
+  value: number;
+};
+
+/**
+ * Enums
+ */
 export enum APIStatusCode {
   'OK' = 200,
   'NotFound' = 404,
@@ -11,6 +39,9 @@ export enum APIStatusCode {
   'InternalServerError' = 500
 }
 
+/**
+ * Global
+ */
 declare global {
   namespace NodeJS {
     interface ProcessEnv {

@@ -1,3 +1,4 @@
+import { ReminderProps } from '../../types';
 import * as cut from './service';
 
 describe('service tests', () => {
@@ -5,7 +6,7 @@ describe('service tests', () => {
         jest.clearAllMocks();
     });
 
-    const mockedStoreParams: cut.StoreProps = {
+    const mockedStoreParams: ReminderProps = {
         interval: {
             type: 'minutes',
             value: 10,
@@ -17,16 +18,15 @@ describe('service tests', () => {
     };
 
     it('should throw an error if arguments are not provided', async () => {
-        expect(cut.store({} as any)).rejects.toThrow(
-            'Missing required property attributes!',
-        );
+        expect(cut.store({} as any)).rejects.toBeInstanceOf(Error);
+        expect(cut.store({} as any)).rejects.toThrow('Missing required property attributes!');
     });
 
     it('should store reminder into db and return reminder id', async () => {
         const result = await cut.store(mockedStoreParams);
 
         expect(result).toEqual({
-            reminderId: '112233abc'
+            reminderId: '112233abc',
         });
     });
 });

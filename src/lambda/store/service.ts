@@ -8,6 +8,7 @@ import { convertStorePropsIntervalToCron } from './../../utils/cron-utils';
 import { hashString } from './../../utils/hash-utils';
 import { client, PutCommand } from './../../clients/dynamodb-client';
 import { generateUniqueId } from '../../utils/dynamodb-utils';
+import { ReminderProps } from '../../types';
 
 const eventBridgeClient = new EventBridgeClient({});
 const lambdaClient = new LambdaClient({});
@@ -19,7 +20,7 @@ const dynamodbTableName: string = process.env.REMINDER_TABLE_NAME;
 /**
  * Store reminder
  */
-export const store = async (props: StoreProps) => {
+export const store = async (props: ReminderProps) => {
     const { interval, sender, recipient, subject, message } = props;
 
     if (!interval || !sender || !recipient || !message || !subject) {
@@ -77,11 +78,17 @@ export const store = async (props: StoreProps) => {
 
         // Store reminder in database
         const reminderId: string = generateUniqueId();
+
+        props = {
+            ...props,
+            eventBridgeRuleName: ruleName
+        }
+
         const putCommand = new PutCommand({
             TableName: dynamodbTableName,
             Item: {
                 id: reminderId,
-                ...props,
+                ...props
             },
         });
 
@@ -98,22 +105,4 @@ export const store = async (props: StoreProps) => {
     } catch (err) {
         throw err;
     }
-};
-
-export interface StoreProps {
-    interval: StorePropsInterval;
-    sender: string;
-    recipient: string;
-    subject: string;
-    message: string;
-}
-
-export type ReminderRecord = {
-    reminderId: string;
-    ruleName: string;
-};
-
-export type StorePropsInterval = {
-    type: 'minutes' | 'hours' | 'days' | 'weeks';
-    value: number;
 };
