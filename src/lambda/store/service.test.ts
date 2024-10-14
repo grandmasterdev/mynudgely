@@ -15,6 +15,7 @@ describe('service tests', () => {
         recipient: 'receiver-test@test.x',
         subject: 'test',
         message: 'test message',
+        maxCycles: 3
     };
 
     it('should throw an error if arguments are not provided', async () => {

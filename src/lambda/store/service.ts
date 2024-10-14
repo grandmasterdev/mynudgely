@@ -21,15 +21,22 @@ const dynamodbTableName: string = process.env.REMINDER_TABLE_NAME;
  * Store reminder
  */
 export const store = async (props: ReminderProps) => {
-    const { interval, sender, recipient, subject, message } = props;
+    const { interval, sender, recipient, subject, message, maxCycles } = props;
 
-    if (!interval || !sender || !recipient || !message || !subject) {
+    if (
+        !interval ||
+        !sender ||
+        !recipient ||
+        !message ||
+        !subject ||
+        !maxCycles
+    ) {
         throw new Error('Missing required property attributes!');
     }
 
-    const ruleName: string = hashString(
-        `mynudgely-${sender}:${recipient}:${subject}`,
-    );
+    const reminderId: string = generateUniqueId();
+
+    const ruleName: string = hashString(`mynudgely-${reminderId}`);
     const scheduleExpression: string = convertStorePropsIntervalToCron(
         props.interval.type,
         props.interval.value,
@@ -53,6 +60,9 @@ export const store = async (props: ReminderProps) => {
                 {
                     Id: '1',
                     Arn: lambdaArn,
+                    Input: JSON.stringify({
+                        reminderId: reminderId,
+                    }),
                 },
             ],
         });
@@ -77,18 +87,17 @@ export const store = async (props: ReminderProps) => {
         );
 
         // Store reminder in database
-        const reminderId: string = generateUniqueId();
-
         props = {
             ...props,
-            eventBridgeRuleName: ruleName
-        }
+            currentCycles: 0,
+            eventBridgeRuleName: ruleName,
+        };
 
         const putCommand = new PutCommand({
             TableName: dynamodbTableName,
             Item: {
                 id: reminderId,
-                ...props
+                ...props,
             },
         });
 
@@ -103,6 +112,7 @@ export const store = async (props: ReminderProps) => {
             reminderId: reminderId,
         };
     } catch (err) {
+        console.error(`${(err as Error).message}`);
         throw err;
     }
 };

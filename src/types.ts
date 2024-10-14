@@ -8,6 +8,8 @@ export interface ReminderProps {
   subject: string;
   message: string;
   eventBridgeRuleName?: string;
+  maxCycles: number;
+  currentCycles?: number;
 }
 
 /**
@@ -37,6 +39,11 @@ export enum APIStatusCode {
   'UnAuthorized' = 401,
   'BadRequest' = 400,
   'InternalServerError' = 500
+}
+
+export enum SendEvent {
+  exceeded = "Exceeded",
+  sent = "Sent"
 }
 
 /**
