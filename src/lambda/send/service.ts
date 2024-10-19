@@ -37,9 +37,11 @@ export const send = async (props: SendReminder) => {
             maxCycles,
             currentCycles,
         } = result.Item as ReminderProps;
-
+        
         if (currentCycles && currentCycles >= maxCycles) {
             // Kill reminder
+            console.debug(`Reminder exceeded max cycle. Killing the reminder.`);
+
             await kill(reminderId);
 
             return {
@@ -48,6 +50,8 @@ export const send = async (props: SendReminder) => {
         }
 
         // Send reminder
+
+        console.debug(`Reminder sent.`);
 
         // Update current cycle to database
         const cycles = currentCycles ? currentCycles + 1 : 1;
@@ -66,10 +70,16 @@ export const send = async (props: SendReminder) => {
             },
         });
 
+        console.debug(`Reminder cycle updated.`);
+
         await ddbClient.send(updateParams);
     } catch (err) {
         console.error(`${(err as Error).message}`);
         throw err;
+    }
+
+    return {
+        event: SendEvent.sent
     }
 };
 

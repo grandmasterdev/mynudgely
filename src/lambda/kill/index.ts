@@ -5,7 +5,7 @@ import { APIGatewayResponse, APIStatusCode } from '../../types';
 const LOG_PREFIX: string = '[handler]'
 
 /**
- * Store reminder lambda handler
+ * Kill reminder lambda handler
  * @param event
  * @param context
  * @returns
